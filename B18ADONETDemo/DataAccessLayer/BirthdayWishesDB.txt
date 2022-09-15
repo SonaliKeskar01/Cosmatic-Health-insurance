@@ -1,0 +1,83 @@
+﻿-------------------------------------------------------------------------------------------------
+Create Table Friends(
+FriendId int primary key Identity,
+Name Varchar(50),
+NickName varchar(50),
+DateOfBirth Date,
+Email varchar(100),
+EmailSubject Varchar(100),
+EmailBody varchar(100),
+Mobile varchar(10),
+MobileMessage varchar(500)
+)
+go
+
+create table BirthdayWishes(
+Id int primary key Identity,
+FriendId int foreign key references Friends(FriendId),
+IsEmailSent bit,
+EmailSentDate smallDateTime,
+IsMessageSent bit,
+MessageSentDate smalldatetime
+)
+go
+
+create table ErrorLogs(
+LogId int primary key Identity,
+FriendId int foreign key references Friends(FriendId),
+ErrorMessage varchar(500),
+MethodName varchar(100),
+ErrorDateTime datetime)
+
+go
+--1-sp-Fetch all friends details who have today as birthday
+create proc usp_TodaysBirthdays
+as
+
+begin
+
+select f.* from Friends f join BirthdayWishes bw
+on f.FriendId =bw.FriendId
+where MONTH(DateOfBirth) =MONTH(GetDate())
+ and DAY(DateOfBirth)= Day(GETDATE()) and
+ bw.IsEmailSent =0 --or bw.IsMessageSent =0)
+
+end
+
+---2-sp-update birthdaywisheshs table with success
+
+create proc usp_UpdateWishes
+@FriendId int,@IsEmailSent bit,@IsMessageSent bit
+as
+begin
+	if not exists (select FriendId from BirthdayWishes where FriendId=@FriendId)
+		begin
+			insert into BirthdayWishes values(@FriendId,@IsEmailSent,GETDATE(),@IsMessageSent ,GETDATE())
+	   end
+    else
+	   begin
+		if exists
+			(select FriendId from BirthdayWishes where FriendId=@FriendId and @IsEmailSent=0)
+				begin 
+				update BirthdayWishes set IsEmailSent=@IsEmailSent  ,EmailSentDate=GETDATE() where FriendId=@FriendId
+				end
+
+				if exists
+			(select FriendId from BirthdayWishes where FriendId=@FriendId and @IsMessageSent=0)
+				begin 
+				update BirthdayWishes set IsMessageSent=@IsMessageSent  ,MessageSentDate=GETDATE() where FriendId=@FriendId
+				end
+
+	   end
+end
+
+---3-sp-to insert error information to database -ErrorLogs Table
+create proc usp_LogErrorToDB
+@FriendId int ,@ErrorMessage varchar(500),@MethodName varchar(100)
+
+as
+
+begin
+	insert into ErrorLogs values (@FriendId, @ErrorMessage,@MethodName,GETDate())
+end
+

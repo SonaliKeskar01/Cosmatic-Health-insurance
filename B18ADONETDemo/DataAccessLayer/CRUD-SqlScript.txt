@@ -1,0 +1,97 @@
+﻿-----------------------------------------------------------------------------------------------------------
+---CRUD---
+---------------------------------------------------------------------------------------------------------------------
+---GetAllStudent
+
+create proc usp_Students
+as
+begin
+select id,Name,CorseId from Student
+end
+
+go
+---GetStudentByRollNumber
+create proc usp_StudentDetailsByRollnumber
+@id int
+as
+begin
+select id,Name,CorseId from Student where id=@id
+end
+
+go
+--create student
+create proc usp_CreateNewStudent
+	@id int,@Name varchar(30),@CorseId int,@InsertStatus bit out
+as
+begin
+	begin try
+		declare @RN int
+		 select @RN=max(id) from Student
+		insert into Student (id,Name,CorseId)values(@RN+1,@Name,@CorseId);
+		set @InsertStatus =1
+	end try
+
+	begin catch
+	set @InsertStatus =0
+	end catch
+
+end
+
+go
+--update student
+
+create proc usp_UpdateStudent
+	@id int,@Name varchar(30),@CorseId int,@UpdateStatus bit out
+as
+begin
+	begin try
+		if exists (select Name from Student where id=@id)
+
+			begin
+				update Student set Name=@Name  ,CorseId=@CorseId where id=@id
+				set @UpdateStatus =1
+			end
+		
+		else
+		
+		 begin
+			set @UpdateStatus =0
+		 end
+	end try
+
+	begin catch
+	set @UpdateStatus =0
+	end catch
+
+end
+
+go
+--delete student
+
+
+create proc usp_DeleteStudent
+	@id int,@DeletedStatus bit out
+as
+begin
+	begin try
+		if exists (select Name from Student where id=@id)
+
+			begin
+				delete from student where id=@id
+				set @DeletedStatus =1
+			end
+		
+		else
+		
+		 begin
+			set @DeletedStatus =0
+		 end
+	end try
+
+	begin catch
+	set @DeletedStatus =0
+	end catch
+
+end
+
+go
